@@ -7,8 +7,8 @@ class Camera:
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        platform: str = "jetson",  # Platform on which the code is running
-        device_id: int = 0,  # 0 for CAM0 port, 1 for CAM1 port
+        platform: str = "usb",  # Platform on which the code is running
+        device_id: int = 0,  # 0 or 1, corresponding to CAM port or /dev/videoX for USB camera
         flip: bool = False,  # Flip the image by 180 degrees
         width: int = 640,  # Width of the image, in pixels
         height: int = 480,  # Height of the image, in pixels
@@ -17,17 +17,14 @@ class Camera:
         """Initialize the camera object properties.
 
         Args:
-            platform (str, optional): Platform on which the code is running. Defaults to 'jetson'. Can be 'jetson' or 'desktop'.
+            platform (str, optional): Platform on which the code is running. Defaults to "usb". can be either "usb" or "csi".
             device_id (int, optional): ID of device, either 0 or 1, corresponding to CAM port. Defaults to 0.
             flip (bool, optional): Whether to flip the image by 180 degrees. Defaults to False.
             width (int, optional): Width of the image, in pixels. Defaults to 640.
             height (int, optional): Height of the image, in pixels. Defaults to 480.
             fps (int, optional): Frames per second. Defaults to 30.
         """
-        assert platform in [
-            "jetson",
-            "desktop",
-        ], "Invalid platform. Must be 'jetson' or 'desktop'"
+        assert platform in ["usb", "csi"], "Invalid platform. Must be usb or csi"
         self.platform = platform
         self.device_id = device_id
         self.flip = flip
@@ -43,10 +40,10 @@ class Camera:
             RuntimeError: If the camera could not be opened.
         """
 
-        if self.platform == "desktop":
-            pipeline = 0
+        if self.platform == "usb":
+            pipeline = self.device_id
             api = cv2.CAP_ANY
-        else:
+        elif self.platform == "csi":  # unstable for many Jetpack versions
             pipeline = (
                 f"nvarguscamerasrc sensor-id={self.device_id} ! "
                 "video/x-raw(memory:NVMM), "
@@ -54,7 +51,6 @@ class Camera:
                 f"height={self.height}, "
                 "format=(string)NV12, "
                 f"framerate={self.fps}/1 ! "
-                f"nvvidconv flip-method={(2 if self.flip else 0)} ! "
                 "video/x-raw, format=(string)BGRx ! videoconvert ! "
                 "video/x-raw, format=(string)BGR ! appsink"
             )
@@ -70,8 +66,11 @@ class Camera:
         Returns:
             np.ndarray: Image from the camera.
         """
-        _, image = self.cap.read()
-        image = cv2.flip(image, 1)  # solve mirror effect
+        ok = False
+        while not ok:
+            ok, image = self.cap.read()  # read a frame from the camera
+        if self.flip:
+            image = cv2.flip(image, 1)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return image
 

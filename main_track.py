@@ -13,17 +13,23 @@ def main():
         "-p",
         "--platform",
         type=str,
-        default="jetson",
-        choices=["jetson", "desktop"],
-        help="Choose the platform: jetson or desktop",
+        default="usb",
+        help="Choose the platform: usb or csi",
+    )
+    arg_parser.add_argument(
+        "-c",
+        "--camera-id",
+        type=int,
+        default=0,
+        help="Camera ID for camera (default: 0)",
     )
     arg_parser.add_argument(
         "-t",
         "--tracker",
         type=str,
-        default="KCF",
-        choices=["CSRT", "KCF"],
-        help="Choose the tracker type: CSRT or KCF",
+        default="kcf",
+        choices=["csrt", "kcf"],
+        help="Choose the tracker type: csrt or kcf",
     )
     arg_parser.add_argument(
         "-l",
@@ -35,7 +41,7 @@ def main():
 
     args = arg_parser.parse_args()
 
-    camera = Camera(platform=args.platform)
+    camera = Camera(platform=args.platform, device_id=args.camera_id)
     camera.start()
     display = Display()
     tracking = False

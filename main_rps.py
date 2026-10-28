@@ -18,12 +18,26 @@ def get_model(framework):
 if __name__ == "__main__":
 
     arg_parser = argparse.ArgumentParser()
+    # arg_parser.add_argument(
+    #     "-p",
+    #     "--platform",
+    #     type=str,
+    #     default="jetson",
+    #     help="Choose the platform: jetson or desktop",
+    # )
     arg_parser.add_argument(
         "-p",
         "--platform",
         type=str,
-        default="jetson",
-        help="Choose the platform: jetson or desktop",
+        default="usb",
+        help="Choose the platform: usb or csi",
+    )
+    arg_parser.add_argument(
+        "-c",
+        "--camera-id",
+        type=int,
+        default=0,
+        help="Camera ID for camera (default: 0)",
     )
     arg_parser.add_argument(
         "-f",
@@ -34,7 +48,7 @@ if __name__ == "__main__":
     )
     args = arg_parser.parse_args()
 
-    camera = Camera(platform=args.platform)
+    camera = Camera(platform=args.platform, device_id=args.camera_id)
     camera.start()
     display = Display()
     sign_recog = get_model(args.framework)

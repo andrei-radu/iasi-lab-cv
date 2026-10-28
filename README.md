@@ -18,14 +18,19 @@ All of them run on the Jetson Nano by default, and also on a regular computer wi
 
 ## Camera setup
 
-First, check if the camera is working by running the following command:
+First, check if the camera is working by running the following commands:
+
+If using a USB camera:
+```bash
+ls /dev/video*
+```
+and check if the output contains `/dev/video0` or `/dev/video1`.
+
+If using the Jetson Nano CSI camera, run the following command to check if the camera is detected:
 ```bash
 gst-launch-1.0 nvarguscamerasrc ! nvoverlaysink
 ```
-
-If the camera is working, you should see a window with the camera feed. Press `Ctrl+C` to close the window.
-
-If the camera is not working, make sure the pins are configured correctly. Use the following command to check the pins:
+if the camera is working, you should see a window with the camera feed. Press `Ctrl+C` to close the window. If the camera is not working, make sure the pins are configured correctly. Use the following command to check the pins:
 ```bash
 sudo /opt/nvidia/jetson-io/jetson-io.py
 ```
@@ -71,9 +76,11 @@ Every application accepts this parameter:
 
 | Parameter | Default | Description |
 | --- | --- | --- |
-| `-p`, `--platform` | `jetson` | Where the camera image comes from. `jetson` reads the Jetson Nano camera connected to the CAM0 port, at 640x480 and 30 FPS. `desktop` reads the computer's default webcam, at its default resolution. |
+| `-p`, `--platform` | `usb` | Where the camera image comes from. `usb` reads the camera connected to the computer's USB port, while `csi` reads the Jetson Nano camera, at its default resolution.
+| `-c`, `--camera-id` | `0` | Which camera to use. For a USB camera, this is the number in `/dev/videoX`. For the Jetson Nano camera, this is `0` for the CAM0 port and `1` for the CAM1 port. |
 
-The camera image is flipped horizontally, so it behaves like a mirror. Each application shows the result in a window called `video-feed`; press **Q** in that window to quit.
+
+Each application shows the result in a window called `video-feed`; press **Q** in that window to quit.
 
 
 # Rock Paper Scissors Game
@@ -98,10 +105,10 @@ wget -O models/MobileNetV3FF_small.onnx "https://github.com/andrei-radu/iasi-lab
 ```bash
 python3 main_rps.py
 ```
+## Specific parameters and controls
 
 | Parameter | Default | Description |
 | --- | --- | --- |
-| `-p`, `--platform` | `jetson` | See [Common parameters](#common-parameters-and-controls). |
 | `-f`, `--framework` | `onnx` | Which version of the model runs. `onnx` runs `models/MobileNetV3FF_small.onnx` with ONNX Runtime. `torch` runs the PyTorch version, `models/MobileNetV3FF_small.pth`, which also needs `torch` and `torchvision` installed. |
 
 | Key | Action |
@@ -118,9 +125,9 @@ Select any object in the image with the mouse, and an OpenCV tracker follows it 
 python3 main_track.py
 ```
 
+## Specific parameters and controls
 | Parameter | Default | Description |
 | --- | --- | --- |
-| `-p`, `--platform` | `jetson` | See [Common parameters](#common-parameters-and-controls). |
 | `-t`, `--tracker` | `KCF` | Which tracking algorithm to use. `KCF` is fast, but loses the object more easily when it moves quickly, changes size or is partly hidden. `CSRT` follows the object more reliably, but is slower, so the video runs at a lower frame rate, especially on the Jetson Nano. |
 | `-l`, `--max_length` | `300` | How many past positions the motion trail keeps. One position is added per frame, so `300` is about 10 seconds of movement at 30 FPS. |
 
@@ -148,16 +155,14 @@ wget -O models/person_lraspp.onnx "https://github.com/andrei-radu/iasi-lab-cv/re
 ```bash
 python3 main_segm.py
 ```
-To replace the background with one of the images in `images/`:
-```bash
-python3 main_segm.py -i images/moon.jpg
-```
+
+## Specific parameters and controls
 
 | Parameter | Default | Description |
 | --- | --- | --- |
 | `-p`, `--platform` | `jetson` | See [Common parameters](#common-parameters-and-controls). |
 | `-t`, `--threshold` | `0.5` | How sure the model must be, from `0` to `1`, before a pixel counts as a person. Lower values cover more of the person, but also mark parts of the background by mistake. Higher values keep only the pixels the model is most sure about, so edges and limbs may be cut off. |
-| `-i`, `--img` | none | Path to an image to show behind the people, for example `images/moon.jpg`. The image is stretched to the size of the camera image. Without this parameter, the people are tinted green and the background stays as it is. |
+| `-i`, `--img` | none | Path to an image to show behind the people, for example `images/moon.jpg`. Changes the background with the specified image. |
 | `--max-fps` | `5` | How many times per second the segmentation runs, from `1` to `30`. The video still updates on every frame, reusing the last result in between. Higher values make the mask follow movement more closely, but need more computing power. On the Jetson Nano, a value that is too high slows down the whole video. |
 
 | Key | Action |
@@ -168,6 +173,8 @@ python3 main_segm.py -i images/moon.jpg
 # Acknowledgments
 - [HaGRID](https://gitlab.ai.cloud.ru/rndcv/hagrid), which is under the CC-by-SA licence.
 - [torchvision](https://github.com/pytorch/vision), for the pretrained LR-ASPP MobileNetV3 segmentation model.
+- [OpenCV](https://opencv.org/), for the KCF and CSRT trackers.
+- [ONNX Runtime](https://onnxruntime.ai/), for running the models in ONNX format.
 
 # License
 This project is licensed under the [MIT License](LICENSE).
