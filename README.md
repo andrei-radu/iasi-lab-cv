@@ -66,7 +66,7 @@ sudo apt-get install git
 
 Then clone the repository:
 ```bash
-git clone https://github.com/andrei-radu/iasi-rps.git
+git clone https://github.com/andrei-radu/iasi-lab-cv.git
 ```
 
 All the commands below are run from the root directory of the repository.
